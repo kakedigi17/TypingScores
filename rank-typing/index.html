@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<title>ランキング</title>
+<meta charset="utf-8">
+<script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/1.0.11/jquery.csv.min.js"></script>
+<style>
+    .table1 {
+      background-color: honeydew;
+      border-collapse: collapse;
+    }
+    .th1 {
+      background-color: palegreen;
+    }
+    .table2 {
+      background-color: azure;
+      border-collapse: collapse;
+    }
+    .th2 {
+      background-color: deepskyblue;
+    }
+    .table3 {
+      background-color: ivory;
+      border-collapse: collapse;
+    }
+    .th3 {
+      background-color: yellow;
+    }
+    table th, table td {
+      border: solid 1px #aaa;
+      padding:10px;
+      height: 45px
+    }
+    
+    body {
+        display: flex;
+        zoom: 60%;
+    }
+    
+    div {
+        text-align: center;
+        flex-flow: column;
+        
+        padding-left: 25px;
+        padding-right: 25px;
+    }
+</style>
+</head>
+<body>
+<script src="https://www.gstatic.com/firebasejs/5.8.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/5.8.1/firebase-firestore.js"></script>
+<script>
+var config = {
+    apiKey: "AIzaSyAGnTPOE0zCPQ08W-poMg0oIKeAyZae6QQ",
+    authDomain: "data-typing.firebaseapp.com",
+    projectId: "data-typing",
+    storageBucket: "data-typing.appspot.com",
+    messagingSenderId: "1051810006855",
+    appId: "1:1051810006855:web:8268125a377c836ff86e62"
+};
+
+firebase.initializeApp(config);
+</script>
+<script src="../app/number.js"></script>
+<script>
+    var names = null;
+    var year = new Date().getFullYear();
+    /*$.ajaxSetup({ async: false });
+    for (var i = 2020;i <= year;i++) {
+        $.getJSON("../app/students/"+String(i)+".json").done(function (json) {
+            names[String(i)] = json;
+        });
+    }
+    console.log(names);
+    $.ajaxSetup({ async: true });
+    */
+    function parseCsv(data) {
+      // CSVを配列で読み込む
+      names = $.csv.toArrays(data);
+    }
+    
+    
+    
+    function getScores() {
+      var db = firebase.firestore();
+      var dat = new Date();
+      var md = dat.getFullYear()+String(parseInt(dat.getMonth()+1))
+      var postRef1 = db.collection("month").doc(md);
+      postRef1.get().then(e => {
+        var d = e.data();
+        console.log(d)
+        //alert(n+"/"+dat);
+        document.body.insertAdjacentHTML('beforeend','<div id="div1"></div>');
+        var div1 = document.getElementById("div1");
+        div1.insertAdjacentHTML('beforeend','<h2>月間ランキング</h2>');
+        if(d) {
+            var array = Object.keys(d).map((k)=>({ key: k, value: Number(d[k]) }));
+            array.sort((a, b) => b.value - a.value);
+            //var array = sortBy(names, 'DESC', 1, 0);
+            createTable(array,"1");
+            div1.insertAdjacentHTML('beforeend','<br>');
+        }
+      });
+      var wd = dat.getFullYear()+String(parseInt(dat.getMonth()+1))+String(getWeeks(dat));
+      var postRef2 = db.collection("week").doc(wd);
+      postRef2.get().then(e => {
+        var d = e.data();
+        console.log(d)
+        //alert(n+"/"+dat);
+        document.body.insertAdjacentHTML('beforeend','<div id="div2"></div>');
+        var div2 = document.getElementById("div2");
+        div2.insertAdjacentHTML('beforeend','<h2>週間ランキング</h2>');
+        if(d) {
+            var array = Object.keys(d).map((k)=>({ key: k, value: Number(d[k]) }));
+            array.sort((a, b) => b.value - a.value);
+            //var array = sortBy(names, 'DESC', 1, 0);
+            createTable(array,"2");
+            div2.insertAdjacentHTML('beforeend','<br>');
+        }
+      });
+      var dd = dat.getFullYear()+String(parseInt(dat.getMonth()+1))+String(dat.getDate());
+      var postRef3 = db.collection("day").doc(dd);
+      postRef3.get().then(e => {
+        var d = e.data();
+        console.log(d)
+        //alert(n+"/"+dat);
+        document.body.insertAdjacentHTML('beforeend','<div id="div3"></div>');
+        var div3 = document.getElementById("div3");
+        div3.insertAdjacentHTML('beforeend','<h2>毎日ランキング</h2>');
+        if(d) {
+            var array = Object.keys(d).map((k)=>({ key: k, value: Number(d[k]) }));
+            array.sort((a, b) => b.value - a.value);
+            //var array = sortBy(names, 'DESC', 1, 0);
+            createTable(array,"3");
+            div3.insertAdjacentHTML('beforeend','<br>');
+        }
+      });
+    }
+    
+    /*function getName(dicts,str) {
+        console.log(str);
+        var dict = dicts[String(str.substr(0,4))];
+        var allkey = Object.keys(dict);//名前
+        console.log(allkey);
+        for(var i of allkey) {
+            console.log(dict[i]);
+            if(String(dict[i]) === String(str)) {
+                console.log(i)
+                return i;
+            }
+        }
+        return false;
+    }*/
+    
+    function getName(dicts,str) {
+        for(var i = 0;i < dicts.length;i++) {
+            if(parseInt(dicts[i][0]) == parseInt(str.substring(2,4))) {
+              //alert(dicts[parseInt(i*2+1)]);
+              return String(dicts[i][1]);
+            }
+        }
+        return false;
+    }
+    
+    function getWeeks(today) {
+      var n = Math.floor((today.getDate() - today.getDay() + 12 ) / 7);
+      return n;
+    }
+    
+    function max300(obj) {
+        var newLine = obj.filter(function(item, index){
+            if (parseInt(item.value) <= 300) return true;
+        });
+        
+        return newLine;
+    }
+    
+    function createTable(dict,ni) {
+        var rank = [];
+        var mybody = document.getElementById("div"+ni);
+        var mytable = document.createElement("table");
+        mytable.classList.add("table"+ni);
+        var mytbody = document.createElement("tbody");
+        var count = 0;
+        for(var k in dict) {
+            if(count >= 150) {
+                break;
+            }
+            var mytr = document.createElement("tr");
+            var myth = document.createElement("th");
+            myth.classList.add("th"+ni);
+            var mytd1 = document.createElement("td");
+            var mytd2 = document.createElement("td");
+            rank.push(parseInt(k)+1);
+            myth.textContent = String(rank[k])+"位";
+            var ns = String(dict[k]["key"]).split("");
+            $.ajaxSetup({ async: false });
+            $.get('../app/students/'+ns[0]+'/'+ns[1]+'.csv', parseCsv, 'text');
+            $.ajaxSetup({ async: true });
+            var name = getName(names,String(dict[k]["key"]));
+            if(!(name)) {
+                mytd1.textContent = "-";
+                mytd2.textContent = "-";
+            } else {
+                mytd1.textContent = name;
+                mytd2.textContent = String(dict[k]["value"])+"文字";
+                if(k > 0) {
+                    if(String(dict[k]["value"]) === String(dict[parseInt(k)-1]["value"])) {
+                        rank[k] = rank[parseInt(k)-1];
+                        myth.textContent = String(rank[k])+"位";
+                    }
+                }
+            }
+            //if(parseInt(dict[k]["value"]) < 1000) {
+                mytr.appendChild(myth);
+                mytr.appendChild(mytd1);
+                mytr.appendChild(mytd2);
+                mytbody.appendChild(mytr);
+                count++;
+            //}
+        }
+        mytable.appendChild(mytbody);
+        mybody.appendChild(mytable);
+    }
+    getScores();
+</script>
+</body>
+</html>

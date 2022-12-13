@@ -1,0 +1,288 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>北中タイピング集計</title>
+  <script src="./jsQR.js"></script>
+  <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/1.0.11/jquery.csv.min.js"></script>
+  <link href="https://fonts.googleapis.com/css?family=Ropa+Sans" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Ropa Sans', sans-serif;
+      color: #333;
+      max-width: 640px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    #githubLink {
+      position: absolute;
+      right: 0;
+      top: 12px;
+      color: #2D99FF;
+    }
+
+    h1 {
+      margin: 10px 0;
+      font-size: 40px;
+    }
+
+    #loadingMessage {
+      text-align: center;
+      padding: 40px;
+      background-color: #eee;
+    }
+
+    #canvas {
+      width: 100%;
+    }
+
+    #output {
+      margin-top: 20px;
+      background: #eee;
+      padding: 10px;
+      padding-bottom: 0;
+    }
+
+    #output div {
+      padding-bottom: 10px;
+      word-wrap: break-word;
+    }
+
+    #noQRFound {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>タイピングスコア集計</h1>
+  <p>QRコード読み取り</p>
+  <div id="loadingMessage">カメラへのアクセスを許可してください。</div>
+  <canvas id="canvas" hidden></canvas>
+  <div id="output" hidden>
+    <div id="outputMessage">QRコードをかざしてください。</div>
+    <div hidden><b>Data:</b> <span id="outputData"></span></div>
+  </div>
+  <script src="https://www.gstatic.com/firebasejs/5.8.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/5.8.1/firebase-firestore.js"></script>
+  <script>
+    var config = {
+      apiKey: "AIzaSyAGnTPOE0zCPQ08W-poMg0oIKeAyZae6QQ",
+      authDomain: "data-typing.firebaseapp.com",
+      projectId: "data-typing",
+      storageBucket: "data-typing.appspot.com",
+      messagingSenderId: "1051810006855",
+      appId: "1:1051810006855:web:8268125a377c836ff86e62"
+    };
+    
+    firebase.initializeApp(config);
+  </script>
+  <script src="../app/number.js"></script>
+  <script type="text/javascript">
+    //====test====
+    //var en = encode(Number(prompt("半角数字を入力してください。","")));
+    //alert(en);
+    //var de = decode(en);
+    //alert("start");
+    //====end=====
+    
+    var sleep = ms => new Promise(res => setTimeout(res, ms))
+    var names = null;
+    
+    function parseCsv(data) {
+      // CSVを配列で読み込む
+      names = $.csv.toArrays(data);
+    }
+    /*var year = new Date().getFullYear();
+    $.ajaxSetup({ async: false });
+    for (var i = 2020;i <= year;i++) {
+        $.getJSON("../app/students/"+String(i)+".json").done(function (json) {
+            names[String(i)] = json;
+        });
+    }
+    console.log(names);
+    $.ajaxSetup({ async: true });*/
+    var video = document.createElement("video");
+    var canvasElement = document.getElementById("canvas");
+    var canvas = canvasElement.getContext("2d");
+    var loadingMessage = document.getElementById("loadingMessage");
+    var outputContainer = document.getElementById("output");
+    var outputMessage = document.getElementById("outputMessage");
+    var outputData = document.getElementById("outputData");
+
+    function drawLine(begin, end, color) {
+      canvas.beginPath();
+      canvas.moveTo(begin.x, begin.y);
+      canvas.lineTo(end.x, end.y);
+      canvas.lineWidth = 4;
+      canvas.strokeStyle = color;
+      canvas.stroke();
+    }
+    
+    
+
+    // Use facingMode: environment to attemt to get the front camera on phones
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function(stream) {
+      video.srcObject = stream;
+      video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscreen
+      video.play();
+      requestAnimationFrame(tick);
+    });
+
+    async function tick() {
+      loadingMessage.innerText = "読み込み中..."
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        loadingMessage.hidden = true;
+        canvasElement.hidden = false;
+        outputContainer.hidden = false;
+
+        canvasElement.height = video.videoHeight;
+        canvasElement.width = video.videoWidth;
+        canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+        var imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+        var code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: "dontInvert",
+        });
+        if (code) {
+          drawLine(code.location.topLeftCorner, code.location.topRightCorner, "#FF3B58");
+          drawLine(code.location.topRightCorner, code.location.bottomRightCorner, "#FF3B58");
+          drawLine(code.location.bottomRightCorner, code.location.bottomLeftCorner, "#FF3B58");
+          drawLine(code.location.bottomLeftCorner, code.location.topLeftCorner, "#FF3B58");
+          outputMessage.hidden = true;
+          outputData.parentElement.hidden = false;
+          outputData.innerText = "読み込み完了";
+          //code.data → 取得した情報
+          //var numb = decode(window.atob(code.data));
+          var numb = parseInt(code.data);
+          if(!isNaN(numb)) {
+            var ns = String(numb).split("");
+            $.ajaxSetup({ async: false });
+            $.get('../app/students/'+ns[0]+'/'+ns[1]+'.csv', parseCsv, 'text');
+            $.ajaxSetup({ async: true });
+            var name = getName(names,String(numb));
+            alert(name);
+            if(!(name)) {
+              console.log("未登録のユーザーです。");
+            }else {
+              await sleep(250);
+              while(true) {
+                var sc = prompt(name+"さんの「入力文字数」を入力してください","");
+                if(sc == null) {
+                  break;
+                }
+                var regex = /[^0-9]/g;
+                var inp = String(sc).replace(regex, "");
+                if(parseInt(inp) <= 300) {
+                  break;
+                }else {
+                  alert("無効なスコアです");
+                }
+              }
+              var regex = /[^0-9]/g;
+              var inp = String(sc).replace(regex, "");
+              if(inp) {
+                maxCheck(numb,parseInt(inp));
+                outputData.innerHTML = "完了しました。";
+                await sleep(1200);
+                outputData.innerHTML = "";
+              }
+            }
+          }
+        } else {
+          outputMessage.hidden = false;
+          outputData.parentElement.hidden = true;
+        }
+      }
+      requestAnimationFrame(tick);
+    }
+    
+    function getName(dicts,str) {
+        for(var i = 0;i < dicts.length;i++) {
+            if(parseInt(dicts[i][0]) == parseInt(str.substring(2,4))) {
+              //alert(dicts[parseInt(i*2+1)]);
+              return String(dicts[i][1]);
+            }
+        }
+        return false;
+    }
+    
+    function save(num,s,mw,d) {
+      var db = firebase.firestore();
+      //alert(dat.getFullYear()+String(parseInt(dat.getMonth()+1)));
+      var userRef = db.collection(mw).doc(d);
+      num = String(num)
+      userRef.set({[num]: s}, { merge: true });
+      //userRef = db.collection('week').doc();
+      //alert(dat.getFullYear()+String(parseInt(dat.getMonth()+1))+String(getWeeks(dat)));
+      //userRef.set({[num]: s});
+    }
+    function getWeeks(today) {
+      var n = Math.floor((today.getDate() - today.getDay() + 12 ) / 7);
+      return n;
+    }
+    
+    function maxCheck(num,s) {
+      var db = firebase.firestore();
+      var dat = new Date();
+      var md = dat.getFullYear()+String(parseInt(dat.getMonth()+1))
+      var postRef1 = db.collection("month").doc(md);
+      postRef1.get().then(e => {
+        var d = e.data();
+        console.log(d)
+        //alert(n+"/"+dat);
+        if(d) {
+          if(num in d) {
+            if (Number(d[num]) < Number(s)) {
+              save(num,s,"month",md);
+            }
+          }else {
+            save(num,s,"month",md);
+          }
+        }else {
+          save(num,s,"month",md);
+        }
+      });
+      
+      var wd = dat.getFullYear()+String(parseInt(dat.getMonth()+1))+String(getWeeks(dat));
+      console.log(wd)
+      var postRef2 = db.collection("week").doc(wd);
+      postRef2.get().then(e => {
+        var d = e.data();
+        console.log(d)
+        //alert(n+"/"+dat);
+        if(d) {
+          if(num in d) {
+            if (Number(d[num]) < Number(s)) {
+              save(num,s,"week",wd);
+            }
+          }else {
+            save(num,s,"week",wd);
+          }
+        }else {
+          save(num,s,"week",wd);
+        }
+      });
+      var dd = dat.getFullYear()+String(parseInt(dat.getMonth()+1))+String(dat.getDate());
+      console.log(dd)
+      var postRef3 = db.collection("day").doc(dd);
+      postRef3.get().then(e => {
+        var d = e.data();
+        console.log(d)
+        //alert(n+"/"+dat);
+        if(d) {
+          if(num in d) {
+            if (Number(d[num]) < Number(s)) {
+              save(num,s,"day",dd);
+            }
+          }else {
+            save(num,s,"day",dd);
+          }
+        }else {
+          save(num,s,"day",dd);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
