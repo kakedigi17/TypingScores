@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>北中タイピング集計</title>
+  <title>デジタルクラブタイピング集計</title>
   <script src="./jsQR.js"></script>
   <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/1.0.11/jquery.csv.min.js"></script>
@@ -57,23 +57,16 @@
 </head>
 <body>
   <h1>タイピングスコア集計</h1>
-  <p>QRコード読み取り</p>
-  <div id="loadingMessage">カメラへのアクセスを許可してください。</div>
-  <canvas id="canvas" hidden></canvas>
-  <div id="output" hidden>
-    <div id="outputMessage">QRコードをかざしてください。</div>
-    <div hidden><b>Data:</b> <span id="outputData"></span></div>
-  </div>
   <script src="https://www.gstatic.com/firebasejs/5.8.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/5.8.1/firebase-firestore.js"></script>
   <script>
-    var config = {
-      apiKey: "AIzaSyAGnTPOE0zCPQ08W-poMg0oIKeAyZae6QQ",
-      authDomain: "data-typing.firebaseapp.com",
-      projectId: "data-typing",
-      storageBucket: "data-typing.appspot.com",
-      messagingSenderId: "1051810006855",
-      appId: "1:1051810006855:web:8268125a377c836ff86e62"
+    const config = {
+      apiKey: "AIzaSyCxGoPNZf-CCfzdmWXWsoTec7J9W2RCa20",
+      authDomain: "data-typing-6f424.firebaseapp.com",
+      projectId: "data-typing-6f424",
+      storageBucket: "data-typing-6f424.appspot.com",
+      messagingSenderId: "773099399469",
+      appId: "1:773099399469:web:e951eb9e86a1f814ad8ba4"
     };
     
     firebase.initializeApp(config);
@@ -103,7 +96,7 @@
     }
     console.log(names);
     $.ajaxSetup({ async: true });*/
-    var video = document.createElement("video");
+    /*var video = document.createElement("video");
     var canvasElement = document.getElementById("canvas");
     var canvas = canvasElement.getContext("2d");
     var loadingMessage = document.getElementById("loadingMessage");
@@ -154,10 +147,20 @@
           outputData.innerText = "読み込み完了";
           //code.data → 取得した情報
           //var numb = decode(window.atob(code.data));
-          var numb = parseInt(code.data);
-          if(!isNaN(numb)) {
-            var ns = String(numb).split("");
-            $.ajaxSetup({ async: false });
+          
+        } else {
+          outputMessage.hidden = false;
+          outputData.parentElement.hidden = true;
+        }
+      }
+      requestAnimationFrame(tick);
+    }*/
+    
+    function inputScore(val) {
+      var numb = parseInt(val);
+      if(!isNaN(numb)) {
+          var ns = String(numb).split("");
+          $.ajaxSetup({ async: false });
             $.get('../app/students/'+ns[0]+'/'+ns[1]+'.csv', parseCsv, 'text');
             $.ajaxSetup({ async: true });
             var name = getName(names,String(numb));
@@ -165,7 +168,6 @@
             if(!(name)) {
               console.log("未登録のユーザーです。");
             }else {
-              await sleep(250);
               while(true) {
                 var sc = prompt(name+"さんの「入力文字数」を入力してください","");
                 if(sc == null) {
@@ -173,7 +175,7 @@
                 }
                 var regex = /[^0-9]/g;
                 var inp = String(sc).replace(regex, "");
-                if(parseInt(inp) <= 300) {
+                if(parseInt(inp) <= 1500) {
                   break;
                 }else {
                   alert("無効なスコアです");
@@ -183,18 +185,9 @@
               var inp = String(sc).replace(regex, "");
               if(inp) {
                 maxCheck(numb,parseInt(inp));
-                outputData.innerHTML = "完了しました。";
-                await sleep(1200);
-                outputData.innerHTML = "";
               }
             }
           }
-        } else {
-          outputMessage.hidden = false;
-          outputData.parentElement.hidden = true;
-        }
-      }
-      requestAnimationFrame(tick);
     }
     
     function getName(dicts,str) {
@@ -283,6 +276,13 @@
         }
       });
     }
+    
+    function start() {
+      var n = prompt("登録番号を入力してください。","");
+      inputScore(n);
+    }
+    
+    start();
   </script>
 </body>
 </html>
