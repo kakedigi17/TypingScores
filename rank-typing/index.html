@@ -86,7 +86,7 @@ firebase.initializeApp(config);
       var db = firebase.firestore();
       var dat = new Date();
       //var dd = dat.getFullYear()+String(parseInt(dat.getMonth()+1))+String(dat.getDate());
-      var dd = 2023;
+      var dd = "2023";
       var postRef3 = db.collection("all").doc(dd);
       postRef3.get().then(e => {
         var d = e.data();
