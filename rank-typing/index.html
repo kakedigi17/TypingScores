@@ -85,6 +85,24 @@ firebase.initializeApp(config);
     function getScores() {
       var db = firebase.firestore();
       var dat = new Date();
+      //var dd = dat.getFullYear()+String(parseInt(dat.getMonth()+1))+String(dat.getDate());
+      var dd = 2023;
+      var postRef3 = db.collection("all").doc(dd);
+      postRef3.get().then(e => {
+        var d = e.data();
+        console.log(d)
+        //alert(n+"/"+dat);
+        document.body.insertAdjacentHTML('beforeend','<div id="div3"></div>');
+        var div3 = document.getElementById("div3");
+        div3.insertAdjacentHTML('beforeend','<h2>全体ランキング</h2>');
+        if(d) {
+            var array = Object.keys(d).map((k)=>({ key: k, value: Number(d[k]) }));
+            array.sort((a, b) => b.value - a.value);
+            //var array = sortBy(names, 'DESC', 1, 0);
+            createTable(array,"3");
+            div3.insertAdjacentHTML('beforeend','<br>');
+        }
+      });
       var md = dat.getFullYear()+String(parseInt(dat.getMonth()+1))
       var postRef1 = db.collection("month").doc(md);
       postRef1.get().then(e => {
@@ -117,23 +135,6 @@ firebase.initializeApp(config);
             //var array = sortBy(names, 'DESC', 1, 0);
             createTable(array,"2");
             div2.insertAdjacentHTML('beforeend','<br>');
-        }
-      });
-      var dd = dat.getFullYear()+String(parseInt(dat.getMonth()+1))+String(dat.getDate());
-      var postRef3 = db.collection("day").doc(dd);
-      postRef3.get().then(e => {
-        var d = e.data();
-        console.log(d)
-        //alert(n+"/"+dat);
-        document.body.insertAdjacentHTML('beforeend','<div id="div3"></div>');
-        var div3 = document.getElementById("div3");
-        div3.insertAdjacentHTML('beforeend','<h2>毎日ランキング</h2>');
-        if(d) {
-            var array = Object.keys(d).map((k)=>({ key: k, value: Number(d[k]) }));
-            array.sort((a, b) => b.value - a.value);
-            //var array = sortBy(names, 'DESC', 1, 0);
-            createTable(array,"3");
-            div3.insertAdjacentHTML('beforeend','<br>');
         }
       });
     }
